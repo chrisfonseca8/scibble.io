@@ -40,7 +40,7 @@
 
     <div id="waiting-screen" class="screen">
         <div class="waiting-container">
-            
+
             <div class="waiting-header">
                 <div class="round-info">Round 1 of 6</div>
                 <div class="room-status">WAITING</div>
@@ -113,15 +113,50 @@
     </div>
 
     <div id="game-screen" class="screen" style="display:none;">
-        <div id="canvas-container"></div>
-        <div id="chat-container">
-            <div id="chat-header">Room Chat</div>
-            <div id="chat-box"></div>
-            <div id="chat-input-container">
-                <input id="message-input" type="text" placeholder="Type a message...">
-                <button id="send-btn">Send</button>
+
+        <div class="game-container">
+
+            <div class="game-header">
+
+                <span>Round 1/4</span>
+                <span id="word-display">_ _ _ _</span>
+                <span>80s</span>
+
             </div>
+
+            <div class="game-body">
+
+                <div class="players-panel">
+                    <h3>Players</h3>
+                    <ul id="game-player-list"></ul>
+                </div>
+
+                <div id="canvas-container"></div>
+
+                <div id="chat-container">
+
+                    <div id="chat-header">
+                        Room Chat
+                    </div>
+
+                    <div id="chat-box"></div>
+
+                    <div id="chat-input-container">
+
+                        <input id="message-input" type="text" placeholder="Guess the word...">
+
+                        <button id="send-btn">
+                            Send
+                        </button>
+
+                    </div>
+
+                </div>
+
+            </div>
+
         </div>
+
     </div>
 
     <script type="module" src="./scripts/main.js"></script>

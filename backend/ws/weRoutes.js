@@ -1,4 +1,4 @@
-import { checkRedis,getRoomMembers,update_redis_limit } from '../services/redis_service/redis_service.js';
+import { checkRedis,getRoomMembers,update_redis_limit,getRoomState,updateRoomState } from '../services/redis_service/redis_service.js';
 import {
     add_socket_to_user_id_Map,
     add_user_to_Map,
@@ -7,6 +7,9 @@ import {
     buildLobbyPlayers,
     getRoomForSocket
 } from './wsManager.js';
+
+import { states } from '../utils/common/states.js';
+const {WAITING,CLOSED,IN_GAME} = states
 
 export const handle_message = async (message, socket) => {
 
@@ -90,6 +93,10 @@ export const handle_message = async (message, socket) => {
             const roomID = getRoomForSocket(socket);
 
             if (!roomID) return;
+            
+            await updateRoomState(roomID,IN_GAME);
+
+            const players = await getRoomMembers(roomID);
 
             // NOTE: anyone currently in the room can trigger this —
             // there's no host-only check here. Flagging in case you want
@@ -97,7 +104,7 @@ export const handle_message = async (message, socket) => {
             // the room:<roomID> hash) before broadcasting.
             await broadcastToRoom(roomID, {
                 type: "START_GAME",
-                payload: {}
+                payload: {players}
             });
 
             break;

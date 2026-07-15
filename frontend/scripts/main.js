@@ -7,6 +7,9 @@
 // (or in a dedicated game.js) once those files are back in scope.
 import "./home.js";
 import "./waiting.js";
+import "./chat.js";
+import "./drawing.js";
+import "./game.js"
 
 import { showScreen } from "./screens.js";
 
