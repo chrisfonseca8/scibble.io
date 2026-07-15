@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Skribbl Clone</title>
+    <script src="https://cdn.jsdelivr.net/npm/p5@1.4.1/lib/p5.min.js"></script>
+    <link rel="stylesheet" href="./styles/main.css">
+</head>
+
+<body>
+
+    <div id="home-screen" class="screen" style="display:none;">
+        <div class="container">
+            <h1 class="title">skribbl.io</h1>
+            <div class="menu">
+                <div class="top">
+                    <input type="text" id="username" placeholder="Enter your name">
+                    <select id="language">
+                        <option>English</option>
+                        <option>French</option>
+                        <option>German</option>
+                        <option>Spanish</option>
+                    </select>
+                </div>
+                <div class="characterBox">
+                    <button id="left" class="arrow">&#10094;</button>
+                    <div class="character">
+                        <img id="avatar" src="https://api.dicebear.com/8.x/bottts/svg?seed=1">
+                    </div>
+                    <button id="right" class="arrow">&#10095;</button>
+                    <button id="randomBtn">🎲</button>
+                </div>
+                <button id="createRoom">Create Private Room</button>
+                <button id="joinRoom">Join Private Room</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="waiting-screen" class="screen">
+        <div class="waiting-container">
+            
+            <div class="waiting-header">
+                <div class="round-info">Round 1 of 6</div>
+                <div class="room-status">WAITING</div>
+                <div class="room-code-box">
+                    <span>Room ID: <strong id="room-code">XJ92-K1L0</strong></span>
+                    <button id="copyRoomCode" title="Copy Room ID">📋</button>
+                </div>
+            </div>
+
+            <div class="waiting-body">
+                <div class="waiting-left">
+                    <div class="settings-list">
+                        <div class="setting-row">
+                            <label>Players</label>
+                            <select id="maxPlayers">
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8" selected>8</option>
+                            </select>
+                        </div>
+
+                        <div class="setting-row fixed-setting">
+                            <label>Language</label>
+                            <div class="fixed-val">English</div>
+                        </div>
+
+                        <div class="setting-row fixed-setting">
+                            <label>Drawtime</label>
+                            <div class="fixed-val">80</div>
+                        </div>
+
+                        <div class="setting-row fixed-setting">
+                            <label>Rounds</label>
+                            <div class="fixed-val">6</div>
+                        </div>
+
+                        <div class="setting-row fixed-setting">
+                            <label>Game Mode</label>
+                            <div class="fixed-val">Normal</div>
+                        </div>
+
+                        <div class="setting-row fixed-setting">
+                            <label>Word Count</label>
+                            <div class="fixed-val">3</div>
+                        </div>
+
+                        <div class="setting-row fixed-setting">
+                            <label>Hints</label>
+                            <div class="fixed-val">2</div>
+                        </div>
+                    </div>
+
+                    <div class="waiting-actions">
+                        <button id="startGameBtn" class="btn-start">Start!</button>
+                        <button id="inviteBtn" class="btn-invite">🔗 Invite</button>
+                    </div>
+                </div>
+
+                <div class="waiting-right">
+                    <ul id="player-list">
+                        <li class="system-msg">ndlnr is now the room owner!</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-screen" class="screen" style="display:none;">
+        <div id="canvas-container"></div>
+        <div id="chat-container">
+            <div id="chat-header">Room Chat</div>
+            <div id="chat-box"></div>
+            <div id="chat-input-container">
+                <input id="message-input" type="text" placeholder="Type a message...">
+                <button id="send-btn">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./scripts/main.js"></script>
+    <script>
+        // Copy to clipboard functionality
+        document.getElementById('copyRoomCode').addEventListener('click', () => {
+            const code = document.getElementById('room-code').innerText;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('Room ID copied to clipboard!');
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,348 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    height: 100vh;
+    overflow: hidden;
+    background-color: #2e63c5;
+    background-image: url('data:image/svg+xml;utf8,<svg opacity="0.1" xmlns="http://www.w3.org/2000/svg" width="100" height="100"><circle cx="50" cy="50" r="40" stroke="black" stroke-width="3" fill="none"/></svg>'); /* Placeholder pattern */
+}
+
+.screen {
+    height: 100vh;
+    width: 100vw;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ============== HOME SCREEN ============== */
+.container {
+    width: 650px;
+}
+
+.title {
+    text-align: center;
+    color: white;
+    font-size: 70px;
+    margin-bottom: 30px;
+    text-shadow: 4px 4px black;
+}
+
+.menu {
+    background: #204bb3;
+    padding: 25px;
+    border-radius: 12px;
+}
+
+.top {
+    display: flex;
+    gap: 15px;
+}
+
+.top input {
+    flex: 1;
+    padding: 12px;
+    font-size: 20px;
+}
+
+.top select {
+    width: 180px;
+    font-size: 20px;
+}
+
+.characterBox {
+    margin-top: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 25px;
+    position: relative;
+}
+
+.character {
+    width: 170px;
+    height: 170px;
+    border-radius: 10px;
+    background: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.character img {
+    width: 150px;
+}
+
+.arrow {
+    width: 50px;
+    height: 50px;
+    font-size: 32px;
+    cursor: pointer;
+}
+
+#randomBtn {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 45px;
+    height: 45px;
+    font-size: 22px;
+    cursor: pointer;
+}
+
+#createRoom {
+    margin-top: 30px;
+    width: 100%;
+    padding: 18px;
+    font-size: 32px;
+    background: #55d045;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+#joinRoom {
+    margin-top: 12px;
+    width: 100%;
+    padding: 18px;
+    font-size: 32px;
+    background: #2a7af3;
+    color: white;
+    border: none;
+    cursor: pointer;
+    border-radius: 8px;
+}
+
+/* ============== WAITING SCREEN ============== */
+.waiting-container {
+    width: 900px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+/* Header */
+.waiting-header {
+    background: white;
+    color: black;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    font-weight: bold;
+    border-bottom: 2px solid #ccc;
+}
+
+.round-info {
+    font-size: 18px;
+}
+
+.room-status {
+    font-size: 14px;
+    letter-spacing: 1px;
+    color: #555;
+}
+
+.room-code-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.room-code-box span {
+    font-size: 16px;
+}
+
+#copyRoomCode {
+    background: #eee;
+    border: 1px solid #ccc;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+#copyRoomCode:hover {
+    background: #ddd;
+}
+
+/* Body (Left Settings + Right Players) */
+.waiting-body {
+    display: flex;
+    background: #2c3140; /* Darker background from image */
+}
+
+/* Left - Settings */
+.waiting-left {
+    flex: 2;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #eee;
+    font-size: 16px;
+    padding: 5px 0;
+}
+
+.setting-row label {
+    font-weight: normal;
+}
+
+.setting-row select, .setting-row .fixed-val {
+    width: 200px;
+    padding: 6px;
+    font-size: 14px;
+    border-radius: 4px;
+    background: white;
+    color: black;
+    border: none;
+}
+
+.setting-row .fixed-val {
+    background: #eee;
+    color: #555;
+    cursor: not-allowed;
+}
+
+/* Action Buttons */
+.waiting-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-start {
+    flex: 2;
+    background: #55d045;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-start:hover {
+    background: #47b839;
+}
+
+.btn-invite {
+    flex: 1;
+    background: #2a7af3;
+    color: white;
+    border: none;
+    padding: 15px;
+    font-size: 20px;
+    font-weight: bold;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.btn-invite:hover {
+    background: #1f65d1;
+}
+
+/* Right - Player List */
+.waiting-right {
+    flex: 1;
+    background: white;
+    padding: 15px;
+    min-height: 400px;
+}
+
+#player-list {
+    list-style: none;
+}
+
+.system-msg {
+    color: #ff9800;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 10px;
+}
+
+/* ============== GAME SCREEN ============== */
+#game-screen {
+    background: #222;
+    gap: 20px;
+}
+
+#canvas-container canvas {
+    border: 2px solid white;
+    background: white;
+}
+
+#chat-container {
+    width: 320px;
+    height: 600px;
+    background: white;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#chat-header {
+    background: #333;
+    color: white;
+    padding: 12px;
+    text-align: center;
+    font-weight: bold;
+}
+
+#chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    background: #f4f4f4;
+}
+
+.message {
+    margin-bottom: 10px;
+    padding: 8px;
+    background: white;
+    border-radius: 5px;
+    word-break: break-word;
+}
+
+#chat-input-container {
+    display: flex;
+    border-top: 1px solid #ccc;
+}
+
+#message-input {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    outline: none;
+}
+
+#send-btn {
+    width: 80px;
+    border: none;
+    cursor: pointer;
+    background: #007bff;
+    color: white;
+    font-weight: bold;
+}
