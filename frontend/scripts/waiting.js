@@ -1,6 +1,7 @@
 import { sendMessage, on } from "./socket.js";
 import { showScreen } from "./screens.js";
 import { state } from "./state.js";
+import {startDrawingCanvas} from './drawing.js'
 
 const roomCodeEl = document.getElementById("room-code");
 const playerListEl = document.getElementById("player-list");
@@ -67,12 +68,14 @@ on("LOBBY_UPDATE", (payload) => {
 // Waiting screen owns START_GAME.
 on("START_GAME", () => {
     showScreen("game");
+    startDrawingCanvas()
 });
 
 startGameBtn.onclick = () => {
 
     sendMessage("START_GAME", {
-        roomID: state.roomID
+        roomID: state.roomID,
+        playerList:playerListEl.innerHTML
     });
 
 };

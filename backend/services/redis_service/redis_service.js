@@ -69,6 +69,7 @@ export const updateRoomState = async (roomID, state) => {
     const roomKey = `room:${roomID}`;
 
     await redis.hset(roomKey, "state", state);
+
 };
 
 
