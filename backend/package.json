@@ -5,7 +5,11 @@
   "main": "index.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node src/server.js"
+    "dev": "node src/server.js",
+    "test:create-room": "node tests/createRoom.test.js",
+    "test:join-room": "node tests/joinRoom.test.js",
+    "test:websocket": "node tests/websocket.test.js",
+    "test:start-game": "node tests/startGame.test.js"
   },
   "keywords": [],
   "author": "",
