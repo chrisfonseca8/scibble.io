@@ -73,9 +73,6 @@ on("START_GAME", () => {
 
 startGameBtn.onclick = () => {
 
-    sendMessage("START_GAME", {
-        roomID: state.roomID,
-        playerList:playerListEl.innerHTML
-    });
+    sendMessage("START_GAME");
 
 };

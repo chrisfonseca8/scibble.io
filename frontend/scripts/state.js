@@ -5,5 +5,6 @@ export const state = {
     roomID: null,
     username: null,
     avatar: null,
-    language: null
+    language: null,
+    isDrawer: false
 };

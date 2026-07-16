@@ -1,6 +1,10 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import { handle_message } from './weRoutes.js';
-import { getRoomMembers, removeMember } from '../services/redis_service/redis_service.js';
+import { getRoomMembers, removeMember, getRoomHash, updateRoomFields } from '../services/redis_service/redis_service.js';
+import { handleGameDisconnect } from '../services/game_service/game_service.js';
+import { states } from '../utils/common/states.js';
+
+const { WAITING, PLAYING, WORD_SELECTION, ROUND_END, GAME_OVER } = states;
 
 // userID -> { socket, roomID, username, isAlive, connected_AT }
 const user_id_details_Map = new Map();
@@ -37,6 +41,10 @@ export const getRoomForSocket = (socket) => {
     const details = user_id_details_Map.get(userID);
 
     return details ? details.roomID : null;
+};
+
+export const getUserIDForSocket = (socket) => {
+    return socket_user_id_Map.get(socket) || null;
 };
 
 const cleanup = (socket) => {
@@ -141,7 +149,37 @@ export function attach_webscoket_server(server) {
             // Never joined a room, or already cleaned up — nothing to broadcast.
             if (!roomID || !userID) return;
 
+            const room = await getRoomHash(roomID);
+            const gameState = Number(room.state);
+            const wasHost = room.hostID === userID;
+
+            // Drawer/guesser disconnect handling (ending the turn
+            // immediately if the drawer left, or recalculating the
+            // required-guesser count) only applies once a game is
+            // actually running.
+            if ([WORD_SELECTION, PLAYING, ROUND_END].includes(gameState)) {
+                await handleGameDisconnect(roomID, userID);
+            }
+
             await removeMember(roomID, userID);
+
+            // Host disconnect: first still-connected player in the
+            // room takes over, per spec.
+            if (wasHost) {
+
+                const remainingMemberIDs = await getRoomMembers(roomID);
+                const newHostID = remainingMemberIDs.find((id) => user_id_details_Map.has(id));
+
+                if (newHostID) {
+
+                    const newHostDetails = user_id_details_Map.get(newHostID);
+
+                    await updateRoomFields(roomID, {
+                        hostID: newHostID,
+                        hostName: newHostDetails.username
+                    });
+                }
+            }
 
             const players = await buildLobbyPlayers(roomID);
 
