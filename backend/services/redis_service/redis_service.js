@@ -168,7 +168,6 @@ export const updateRoomLimit = async (roomID, limit) => {
 export const update_redis_limit = async (limit, roomID) => {
 
     limit = Number(limit);
-    roomID = Number(roomID);
 
     // Update the limit in Redis
     await updateRoomLimit(roomID, limit);

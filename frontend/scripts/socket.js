@@ -5,7 +5,11 @@ export function connectSocket() {
 
     if (socket) return socket;
 
-    socket = new WebSocket("ws://localhost:3000/ws");
+    const isLocalDev = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+        && window.location.port === "5173";
+    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    const host = isLocalDev ? `${window.location.hostname}:3000` : window.location.host;
+    socket = new WebSocket(`${protocol}//${host}/ws`);
 
     // Both home.js and waiting.js need to react to messages on this
     // same socket at different points in the session. A single
@@ -29,6 +33,8 @@ export function getSocket() {
 }
 
 export function sendMessage(type, payload = {}) {
+
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
     socket.send(
         JSON.stringify({

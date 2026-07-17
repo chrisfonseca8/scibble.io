@@ -32,6 +32,12 @@ const avatars = [
 
 let current = 0;
 
+const apiBaseUrl = (() => {
+    const isLocalDev = ["localhost", "127.0.0.1"].includes(window.location.hostname)
+        && window.location.port === "5173";
+    return isLocalDev ? "http://localhost:3000/api" : "/api";
+})();
+
 function updateAvatar() {
     avatar.src = `https://api.dicebear.com/8.x/bottts/svg?seed=${avatars[current]}`;
 }
@@ -134,7 +140,7 @@ createRoom.onclick = async () => {
 
     try {
 
-        const response = await fetch("http://localhost:3000/api/createRoom", {
+        const response = await fetch(`${apiBaseUrl}/createRoom`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -205,7 +211,7 @@ joinRoom.onclick = async () => {
 
     try {
 
-        const response = await fetch("http://localhost:3000/api/joinRoom", {
+        const response = await fetch(`${apiBaseUrl}/joinRoom`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
