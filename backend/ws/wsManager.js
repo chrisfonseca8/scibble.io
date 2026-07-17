@@ -182,10 +182,11 @@ export function attach_webscoket_server(server) {
             }
 
             const players = await buildLobbyPlayers(roomID);
+            const updatedRoom = await getRoomHash(roomID);
 
             await broadcastToRoom(roomID, {
                 type: "LOBBY_UPDATE",
-                payload: { players }
+                payload: { players, limit: Number(updatedRoom.limit) }
             });
         });
 

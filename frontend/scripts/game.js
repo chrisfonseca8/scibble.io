@@ -1,6 +1,6 @@
 import { on, sendMessage } from "./socket.js";
 import { showScreen } from "./screens.js";
-import { startDrawingCanvas } from "./drawing.js";
+import { startDrawingCanvas, clearDrawingCanvas } from "./drawing.js";
 import { state } from "./state.js";
 
 const gamePlayerListEl = document.getElementById("game-player-list");
@@ -104,6 +104,16 @@ on("TURN_STARTING", (payload) => {
     timerDisplayEl.textContent = "--s";
 
     renderPlayers(payload.players);
+
+    clearDrawingCanvas();
+
+    if (!state.isDrawer) {
+        wordOptionsEl.innerHTML = "";
+        const message = document.createElement("p");
+        message.textContent = `${payload.drawerUsername || "A player"} is choosing a word…`;
+        wordOptionsEl.appendChild(message);
+        wordSelectOverlay.style.display = "flex";
+    }
 });
 
 on("WORD_OPTIONS", (payload) => {
@@ -143,6 +153,8 @@ on("ROUND_STARTED", (payload) => {
 on("ROUND_END", (payload) => {
 
     stopTimer();
+    state.isDrawer = false;
+    clearDrawingCanvas();
 
     roundEndWordEl.textContent = `The word was: ${payload.word}`;
 

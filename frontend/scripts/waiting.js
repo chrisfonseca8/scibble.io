@@ -52,7 +52,9 @@ export function renderLobby(players, limit) {
         playerListEl.appendChild(li);
     });
 
-    maxPlayersEl.value = limit;
+    if (limit !== undefined && limit !== null) {
+        maxPlayersEl.value = String(limit);
+    }
 
     updatePlayerLimitOptions(players);
 }

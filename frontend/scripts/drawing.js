@@ -7,13 +7,17 @@ import { state } from "./state.js";
 // runs, and no canvas is created, until startDrawingCanvas() is called.
 
 let p5Instance = null;
+let eraserEnabled = false;
+
+const eraserButton = document.getElementById("eraser-btn");
+const clearButton = document.getElementById("clear-canvas-btn");
 
 function sketch(p) {
 
     p.setup = () => {
         const canvas = p.createCanvas(600, 600);
         canvas.parent("canvas-container");
-        p.background(0);
+        p.background(255);
     };
 
     p.draw = () => {};
@@ -28,7 +32,7 @@ function sketch(p) {
         // during an actual game, not idle canvas play.
         if (!state.isDrawer) return;
 
-        p.stroke(255);
+        p.stroke(eraserEnabled ? 255 : 0);
         p.strokeWeight(4);
 
         p.line(p.pmouseX, p.pmouseY, p.mouseX, p.mouseY);
@@ -39,7 +43,7 @@ function sketch(p) {
             currX: p.mouseX,
             currY: p.mouseY,
             width: 4,
-            color: "#ffffff"
+            color: eraserEnabled ? "#ffffff" : "#000000"
         });
     };
 
@@ -57,6 +61,8 @@ function sketch(p) {
             payload.currY
         );
     };
+
+    p.clearCanvas = () => p.background(255);
 }
 
 export function startDrawingCanvas() {
@@ -69,3 +75,21 @@ export function startDrawingCanvas() {
 on("DRAW_EVENT", (payload) => {
     if (p5Instance) p5Instance.remoteDraw(payload);
 });
+
+export function clearDrawingCanvas() {
+    if (p5Instance) p5Instance.clearCanvas();
+}
+
+eraserButton.addEventListener("click", () => {
+    if (!state.isDrawer) return;
+    eraserEnabled = !eraserEnabled;
+    eraserButton.classList.toggle("active", eraserEnabled);
+});
+
+clearButton.addEventListener("click", () => {
+    if (!state.isDrawer || !p5Instance) return;
+    clearDrawingCanvas();
+    sendMessage("CLEAR_CANVAS");
+});
+
+on("CLEAR_CANVAS", clearDrawingCanvas);

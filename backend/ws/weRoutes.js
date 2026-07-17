@@ -45,6 +45,17 @@ export const handle_message = async (message, socket) => {
             break;
         }
 
+        case "CLEAR_CANVAS": {
+            const roomID = getRoomForSocket(socket);
+            if (!roomID) return;
+
+            const room = await getRoomHash(roomID);
+            if (Number(room.state) !== PLAYING || room.currentDrawerID !== socket_userID(socket)) return;
+
+            await broadcastToRoom(roomID, { type: "CLEAR_CANVAS", payload: {} }, socket);
+            break;
+        }
+
         case "CHAT_EVENT": {
 
             const roomID = getRoomForSocket(socket);
@@ -105,6 +116,7 @@ export const handle_message = async (message, socket) => {
             await createPlayerHash(userID, username, roomID);
 
             const players = await buildLobbyPlayers(roomID);
+            const room = await getRoomHash(roomID);
             console.log(`lobby players : `);
             console.log(...players)
             console.trace(`lobby players called here `)
@@ -114,7 +126,8 @@ export const handle_message = async (message, socket) => {
                 payload: {
                     roomID,
                     userID,
-                    players
+                    players,
+                    limit: Number(room.limit)
                 }
             });
 
@@ -122,7 +135,7 @@ export const handle_message = async (message, socket) => {
             // new player show up.
             await broadcastToRoom(roomID, {
                 type: "LOBBY_UPDATE",
-                payload: { players }
+                payload: { players, limit: Number(room.limit) }
             }, socket);
 
             console.log("Job done");
@@ -142,6 +155,12 @@ export const handle_message = async (message, socket) => {
             // (pre-game-logic) behavior. Flagging in case you want
             // START_GAME restricted to the room's hostID (available on
             // the room:<roomID> hash).
+            const room = await getRoomHash(roomID);
+            if (room.hostID !== socket_userID(socket)) {
+                sendJson(socket, { type: "ERROR", payload: { message: "Only the room host can start the game." } });
+                return;
+            }
+
             const result = await startGame(roomID);
 
             if (!result.status) {
@@ -194,16 +213,21 @@ export const handle_message = async (message, socket) => {
         case "REDIS_UPDATE": {
             console.log("REDIS_UPDATE received");
 
-            const { limit, roomID } = message.payload;
+            const { limit } = message.payload;
+            const roomID = getRoomForSocket(socket);
+            if (!roomID) return;
+
+            const room = await getRoomHash(roomID);
+            if (room.hostID !== socket_userID(socket)) return;
 
             const limit_num = Number(limit);
-            const roomID_num = Number(roomID);
+            if (!Number.isInteger(limit_num) || limit_num < 2 || limit_num > 8) return;
 
-            await update_redis_limit(limit_num, roomID_num);
+            await update_redis_limit(limit_num, roomID);
 
-            const players = await getRoomMembers(roomID_num); // however you're getting them
+            const players = await buildLobbyPlayers(roomID);
 
-            await broadcastToRoom(roomID_num, {
+            await broadcastToRoom(roomID, {
                 type: "LOBBY_UPDATE",
                 payload: {
                     players,
