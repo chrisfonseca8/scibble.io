@@ -12,9 +12,10 @@ import cors from 'cors'
 const app = express()
 const server = http.createServer(app)
 attach_webscoket_server(server)
+const FRONTEND_URL = process.env.FRONTEND_URL
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: FRONTEND_URL,
     credentials: true
 }));
 app.use(express.json())
