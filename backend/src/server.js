@@ -15,7 +15,7 @@ attach_webscoket_server(server)
 const FRONTEND_URL = process.env.FRONTEND_URL
 
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: true,
     credentials: true
 }));
 app.use(express.json())

@@ -11,7 +11,9 @@ import {
     getGuessedCount,
     getPlayer,
     setPlayerConnected,
-    incrementPlayerPoints
+    incrementPlayerPoints,
+    getRoomMembers,
+    deleteRoom
 } from '../redis_service/redis_service.js';
 
 // broadcastToRoom/sendJson/get_user_details come from wsManager, which
@@ -19,7 +21,7 @@ import {
 // module — the same circular-import shape weRoutes<->wsManager already
 // has today. Safe in ESM as long as nothing here runs at import time,
 // only inside functions (which is the case below).
-import { broadcastToRoom, sendJson, get_user_details } from '../../ws/wsManager.js';
+import { broadcastToRoom, sendJson, get_user_details, sendJsonToUser } from '../../ws/wsManager.js';
 
 const { WORD_SELECTION, PLAYING, ROUND_END, GAME_OVER } = states;
 
@@ -42,7 +44,7 @@ const roomTimers = new Map();
 // the server process mid-selection needs.
 const pendingWordOptions = new Map();
 
-const clearRoomTimer = (roomID) => {
+export const clearRoomTimer = (roomID) => {
 
     const existing = roomTimers.get(roomID);
 
@@ -50,6 +52,14 @@ const clearRoomTimer = (roomID) => {
 
     clearTimeout(existing.handle);
     roomTimers.delete(roomID);
+};
+
+// Safe to call more than once.  This is the single teardown entry point for
+// an empty room, so timers cannot resurrect an already-deleted game.
+export const teardownRoom = async (roomID, additionalUserIDs = []) => {
+    clearRoomTimer(roomID);
+    pendingWordOptions.delete(roomID);
+    await deleteRoom(roomID, additionalUserIDs);
 };
 
 const buildPlayersWithScores = async (playerOrder) => {
@@ -120,12 +130,15 @@ export const beginTurn = async (roomID) => {
     console.log(`player order is : ${playerOrder},,, type_of : ${typeof (playerOrder)}`)
     console.trace(`this is in beginTurn()`)
 
-    //if (playerOrder.length === 0) return;
+    if (playerOrder.length === 0 || (await getRoomMembers(roomID)).length === 0) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     const room = await getRoomHash(roomID);
     console.log(typeof (room), room, room.currentDrawerIndex)
     console.trace(`we are tracking the getroomhash details `)
-    const drawerIndex = Number(room.currentDrawerIndex || 0);
+    const drawerIndex = Number(room.currentDrawerIndex || 0) % playerOrder.length;
     const drawerID = playerOrder[drawerIndex];
 
     console.log(`drawerIndex:${drawerIndex},drawerID:${drawerID}`)
@@ -206,6 +219,15 @@ const startPlaying = async (roomID, word) => {
             durationSeconds: TURN_DURATION_SECONDS
         }
     });
+
+    // The word is intentionally not part of ROUND_STARTED.  Deliver it only
+    // to the drawer so the top-of-screen prompt is useful without leaking it
+    // to guessers.
+    const room = await getRoomHash(roomID);
+    const sent = sendJsonToUser(room.currentDrawerID, { type: "DRAW_WORD", payload: { word } });
+    if (!sent) {
+        console.warn(`Failed to send DRAW_WORD to drawer ${room.currentDrawerID} - drawer not connected or not found`);
+    }
 
     const handle = setTimeout(() => endTurn(roomID, "timeout"), TURN_DURATION_SECONDS * 1000);
     roomTimers.set(roomID, { type: "playing", handle });
@@ -290,8 +312,8 @@ export const handleGuess = async (roomID, userID, text) => {
         Math.round((Number(room.timerEndsAt) - Date.now()) / 1000)
     );
 
-    await incrementPlayerPoints(userID, remainingSeconds);
-    await incrementPlayerPoints(room.currentDrawerID, DRAWER_POINTS_PER_GUESSER);
+    await incrementPlayerPoints(userID, remainingSeconds, roomID);
+    await incrementPlayerPoints(room.currentDrawerID, DRAWER_POINTS_PER_GUESSER, roomID);
 
     const guesserDetails = get_user_details(userID);
     const guesserRecord = await getPlayer(userID);
@@ -349,7 +371,16 @@ const advanceTurn = async (roomID) => {
     const playerOrder = await getPlayerOrder(roomID);
     const room = await getRoomHash(roomID);
 
-    let currentDrawerIndex = Number(room.currentDrawerIndex || 0) + 1;
+    if (playerOrder.length === 0 || (await getRoomMembers(roomID)).length === 0) {
+        await teardownRoom(roomID);
+        return;
+    }
+
+    // If the drawer just disconnected they have already been removed from the
+    // list.  The old index now points at the next player; otherwise advance.
+    const storedIndex = Number(room.currentDrawerIndex || 0);
+    const currentDrawerStillPresent = playerOrder.includes(room.currentDrawerID);
+    let currentDrawerIndex = currentDrawerStillPresent ? storedIndex + 1 : Math.min(storedIndex, playerOrder.length);
     let round = Number(room.round || 1);
 
     if (currentDrawerIndex >= playerOrder.length) {
@@ -388,6 +419,10 @@ const endGame = async (roomID) => {
         type: "GAME_OVER",
         payload: { scores, winner }
     });
+
+    // Usually the close handler performs this immediately.  This covers a
+    // game that reached GAME_OVER after its final socket disappeared.
+    if ((await getRoomMembers(roomID)).length === 0) await teardownRoom(roomID);
 };
 
 // Called from wsManager's socket close handler. Handles the three
@@ -396,7 +431,7 @@ const endGame = async (roomID) => {
 // since it isn't game-state specific.
 export const handleGameDisconnect = async (roomID, userID) => {
 
-    await setPlayerConnected(userID, false);
+    await setPlayerConnected(userID, false, roomID);
 
     const room = await getRoomHash(roomID);
     const currentState = Number(room.state);
