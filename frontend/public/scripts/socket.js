@@ -5,11 +5,15 @@ export function connectSocket() {
 
     if (socket) return socket;
 
-    const isLocalDev = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-        && window.location.port === "5173";
-    const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const host = isLocalDev ? `${window.location.hostname}:3000` : window.location.host;
-    socket = new WebSocket(`${protocol}//${host}/ws`);
+const isLocalDev =
+    ["localhost", "127.0.0.1"].includes(window.location.hostname) &&
+    window.location.port === "5173";
+
+const WS_URL = isLocalDev
+    ? "ws://localhost:3000/ws"
+    : "wss://scibble-io.onrender.com/ws";
+
+socket = new WebSocket(WS_URL);
 
     // Both home.js and waiting.js need to react to messages on this
     // same socket at different points in the session. A single
