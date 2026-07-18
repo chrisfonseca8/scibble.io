@@ -1,27 +1,58 @@
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: dockerfile
+
+    restart: unless-stopped
+
     ports:
       - "3000:3000"
+
     environment:
       - PORT=3000
       - REDIS_URL=redis://redis:6379
+
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: dockerfile
+
+    restart: unless-stopped
+
     ports:
       - "5173:80"
 
+
   redis:
     image: redis:7-alpine
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
     container_name: redis-scribble
+
     ports:
       - "127.0.0.1:6379:6379"
-    command: ["redis-server", "--appendonly", "yes"]
+
+    command:
+      - redis-server
+      - --appendonly
+      - yes
+
     volumes:
       - redis-data:/data
+
 
 volumes:
   redis-data:
