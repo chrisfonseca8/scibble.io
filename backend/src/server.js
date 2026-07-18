@@ -26,6 +26,7 @@ app.use('/api', apiRoutes)
 
 const PORT = process.env.PORT || 3000
 const HOST = process.env.HOST || '0.0.0.0'
+const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
 
 
 // app.post('/rooms', async (req, res) => {
@@ -84,13 +85,11 @@ app.use((err, req, res, next) => {
 });
 
 server.listen(PORT, HOST, () => {
-    const base_url =
-        HOST === '0.0.0.0'
-            ? `http://localhost:${PORT}`
-            : `http://${HOST}:${PORT}`;
+    console.log(`Server is running on ${PUBLIC_URL}`);
 
-    console.log(`server is running on ${base_url}`);
-    console.log(
-        `WebSocketServer is running on ${base_url.replace('http', 'ws')}/ws`
-    );
+    const wsURL = PUBLIC_URL
+        .replace("https://", "wss://")
+        .replace("http://", "ws://");
+
+    console.log(`WebSocketServer is running on ${wsURL}/ws`);
 });

@@ -32,11 +32,17 @@ const avatars = [
 
 let current = 0;
 
-const apiBaseUrl = (() => {
-    const isLocalDev = ["localhost", "127.0.0.1"].includes(window.location.hostname)
-        && window.location.port === "5173";
-    return isLocalDev ? "http://localhost:3000/api" : "/api";
-})();
+const isLocalDev = ["localhost", "127.0.0.1"].includes(
+    window.location.hostname
+);
+
+ const API_BASE_URL = isLocalDev
+    ? "http://localhost:3000/api"
+    : "https://scibble-io.onrender.com/api";
+
+ const WS_URL = isLocalDev
+    ? "ws://localhost:3000/ws"
+    : "wss://scibble-io.onrender.com/ws";
 
 function updateAvatar() {
     avatar.src = `https://api.dicebear.com/8.x/bottts/svg?seed=${avatars[current]}`;
@@ -140,7 +146,7 @@ createRoom.onclick = async () => {
 
     try {
 
-        const response = await fetch(`${apiBaseUrl}/createRoom`, {
+        const response = await fetch(`${API_BASE_URL}/createRoom`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
@@ -211,7 +217,7 @@ joinRoom.onclick = async () => {
 
     try {
 
-        const response = await fetch(`${apiBaseUrl}/joinRoom`, {
+        const response = await fetch(`${API_BASE_URL}/joinRoom`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
