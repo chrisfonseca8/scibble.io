@@ -1,7 +1,7 @@
 import { WebSocket, WebSocketServer } from 'ws';
 import { handle_message } from './weRoutes.js';
-import { getRoomMembers, removeMember, getRoomHash, updateRoomFields } from '../services/redis_service/redis_service.js';
-import { handleGameDisconnect } from '../services/game_service/game_service.js';
+import { getRoomMembers, getPlayerOrder, removeMember, removePlayerFromOrder, deletePlayerForRoom, getRoomHash, updateRoomFields } from '../services/redis_service/redis_service.js';
+import { handleGameDisconnect, teardownRoom } from '../services/game_service/game_service.js';
 import { states } from '../utils/common/states.js';
 
 const { WAITING, PLAYING, WORD_SELECTION, ROUND_END, GAME_OVER } = states;
@@ -105,6 +105,15 @@ export const broadcastToRoom = async (roomID, payload, excludeSocket = null) => 
     }
 };
 
+// Send a message to a specific user if they are connected.
+// Returns true if sent, false if user not connected.
+export const sendJsonToUser = (userID, payload) => {
+    const details = user_id_details_Map.get(userID);
+    if (!details) return false;
+    sendJson(details.socket, payload);
+    return true;
+};
+
 export function attach_webscoket_server(server) {
 
     const wss = new WebSocketServer({
@@ -153,15 +162,50 @@ export function attach_webscoket_server(server) {
             const gameState = Number(room.state);
             const wasHost = room.hostID === userID;
 
-            // Drawer/guesser disconnect handling (ending the turn
-            // immediately if the drawer left, or recalculating the
-            // required-guesser count) only applies once a game is
-            // actually running.
+            // Finish any state transition while this socket is still a room
+            // member.  That prevents another simultaneous close from tearing
+            // down the room halfway through this handler and recreating keys.
             if ([WORD_SELECTION, PLAYING, ROUND_END].includes(gameState)) {
                 await handleGameDisconnect(roomID, userID);
             }
 
+            const roomAfterDisconnect = await getRoomHash(roomID);
+            const orderBeforeRemoval = await getPlayerOrder(roomID);
+            const removedPlayerIndex = orderBeforeRemoval.indexOf(userID);
             await removeMember(roomID, userID);
+            await removePlayerFromOrder(roomID, userID);
+
+            // An empty room has no reason to keep timers, word options, or
+            // Redis state alive.  Do this before game-disconnect logic so a
+            // departing drawer cannot schedule another empty-room turn.
+            if ((await getRoomMembers(roomID)).length === 0) {
+                await teardownRoom(roomID, [userID]);
+                return;
+            }
+
+            // Keep the saved list index aimed at the same player after a
+            // removal. If the drawer left, advanceTurn already selected the
+            // following slot in the old list, which shifts down by one.
+            if (removedPlayerIndex !== -1 && [WORD_SELECTION, PLAYING, ROUND_END].includes(gameState)) {
+                const currentIndex = Number(roomAfterDisconnect.currentDrawerIndex || 0);
+                let correctedIndex = currentIndex;
+
+                if (room.currentDrawerID === userID) {
+                    correctedIndex = removedPlayerIndex === orderBeforeRemoval.length - 1 ? 0 : removedPlayerIndex;
+                } else if (removedPlayerIndex < currentIndex) {
+                    correctedIndex = currentIndex - 1;
+                }
+
+                if (correctedIndex !== currentIndex) {
+                    await updateRoomFields(roomID, { currentDrawerIndex: correctedIndex });
+                }
+            }
+
+            // A disconnected user is no longer a room member and cannot
+            // reconnect with this room-issued ID, so its room-bound player
+            // hash can be removed immediately instead of waiting for the
+            // last participant to leave.
+            await deletePlayerForRoom(roomID, userID);
 
             // Host disconnect: first still-connected player in the
             // room takes over, per spec.

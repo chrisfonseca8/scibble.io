@@ -3,6 +3,8 @@ import { showScreen } from "./screens.js";
 import { startDrawingCanvas, clearDrawingCanvas } from "./drawing.js";
 import { state } from "./state.js";
 
+console.log("game.js is loading");
+
 const gamePlayerListEl = document.getElementById("game-player-list");
 const roundDisplayEl = document.getElementById("round-display");
 const wordDisplayEl = document.getElementById("word-display");
@@ -148,6 +150,18 @@ on("ROUND_STARTED", (payload) => {
         : "_ ".repeat(payload.wordLength).trim();
 
     startTimer(payload.timerEndsAt);
+});
+
+// This event is sent only to the active drawer.  Keeping it separate from
+// ROUND_STARTED guarantees the word is never present in a room broadcast.
+console.log("Registering DRAW_WORD handler");
+
+on("DRAW_WORD", (payload) => {
+    console.log("DRAW_WORD received with payload:", payload);
+    if (state.isDrawer) {
+        wordDisplayEl.textContent = payload.word || "Draw the word!";
+    }
+
 });
 
 on("ROUND_END", (payload) => {
