@@ -21,7 +21,7 @@ import {
 // module — the same circular-import shape weRoutes<->wsManager already
 // has today. Safe in ESM as long as nothing here runs at import time,
 // only inside functions (which is the case below).
-import { broadcastToRoom, sendJson, get_user_details, sendJsonToUser } from '../../ws/wsManager.js';
+import { broadcastToRoom, get_user_details, sendJsonToUser } from '../../ws/wsManager.js';
 
 const { WORD_SELECTION, PLAYING, ROUND_END, GAME_OVER } = states;
 
@@ -44,6 +44,17 @@ const roomTimers = new Map();
 // the server process mid-selection needs.
 const pendingWordOptions = new Map();
 
+// A Redis delete cannot cancel JavaScript that was already suspended at an
+// await.  This set is the in-process cancellation token for that work: when
+// the final socket closes, teardown removes the room before deleting Redis
+// keys, and any resumed timer/turn exits without sending a message.
+const activeGameRooms = new Set();
+
+const isGameRoomLive = async (roomID) => {
+    if (!activeGameRooms.has(roomID)) return false;
+    return (await getRoomMembers(roomID)).length > 0;
+};
+
 export const clearRoomTimer = (roomID) => {
 
     const existing = roomTimers.get(roomID);
@@ -57,6 +68,7 @@ export const clearRoomTimer = (roomID) => {
 // Safe to call more than once.  This is the single teardown entry point for
 // an empty room, so timers cannot resurrect an already-deleted game.
 export const teardownRoom = async (roomID, additionalUserIDs = []) => {
+    activeGameRooms.delete(roomID);
     clearRoomTimer(roomID);
     pendingWordOptions.delete(roomID);
     await deleteRoom(roomID, additionalUserIDs);
@@ -111,6 +123,13 @@ export const startGame = async (roomID) => {
         return { status: false, message: "Need at least 2 players to start." };
     }
 
+    if ((await getRoomMembers(roomID)).length === 0) {
+        await teardownRoom(roomID);
+        return { status: false, message: "Room is empty." };
+    }
+
+    activeGameRooms.add(roomID);
+
     await updateRoomFields(roomID, {
         round: 1,
         maxRounds: MAX_ROUNDS,
@@ -125,6 +144,11 @@ export const startGame = async (roomID) => {
 export const beginTurn = async (roomID) => {
 
     clearRoomTimer(roomID);
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     const playerOrder = await getPlayerOrder(roomID);
     console.log(`player order is : ${playerOrder},,, type_of : ${typeof (playerOrder)}`)
@@ -147,12 +171,24 @@ export const beginTurn = async (roomID) => {
     // every one, per spec.
     await clearGuessed(roomID);
 
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
+
     await updateRoomFields(roomID, {
         state: WORD_SELECTION,
         currentDrawerID: drawerID,
         currentWord: "",
         currentWordLength: 0
     });
+
+    // The final socket can close while the Redis write above is pending.
+    // Re-check before creating word options or emitting any turn message.
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     const options = getWordOptions(WORD_OPTIONS_COUNT);
     pendingWordOptions.set(roomID, options);
@@ -169,6 +205,11 @@ export const beginTurn = async (roomID) => {
 
     const drawerRecord = await getPlayer(drawerID);
 
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
+
     await broadcastToRoom(roomID, {
         type: "TURN_STARTING",
         payload: {
@@ -180,14 +221,21 @@ export const beginTurn = async (roomID) => {
         }
     });
 
-    if (drawerDetails) {
+    // Look up the live socket again instead of using the saved reference. A
+    // close event deletes the mapping synchronously, so this cannot send a
+    // stale WORD_OPTIONS message after teardown.
+    if (await isGameRoomLive(roomID)) {
         console.log("SENDING WORD_OPTIONS");
         console.log(options);
-        console.log(drawerDetails.username);
-        sendJson(drawerDetails.socket, {
+        sendJsonToUser(drawerID, {
             type: "WORD_OPTIONS",
             payload: { options }
         });
+    }
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
     }
 
 
@@ -202,6 +250,11 @@ export const beginTurn = async (roomID) => {
 const startPlaying = async (roomID, word) => {
 
     clearRoomTimer(roomID);
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
     const timerEndsAt = Date.now() + TURN_DURATION_SECONDS * 1000;
 
     await updateRoomFields(roomID, {
@@ -210,6 +263,11 @@ const startPlaying = async (roomID, word) => {
         currentWordLength: word.length,
         timerEndsAt
     });
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     await broadcastToRoom(roomID, {
         type: "ROUND_STARTED",
@@ -224,9 +282,16 @@ const startPlaying = async (roomID, word) => {
     // to the drawer so the top-of-screen prompt is useful without leaking it
     // to guessers.
     const room = await getRoomHash(roomID);
-    const sent = sendJsonToUser(room.currentDrawerID, { type: "DRAW_WORD", payload: { word } });
-    if (!sent) {
-        console.warn(`Failed to send DRAW_WORD to drawer ${room.currentDrawerID} - drawer not connected or not found`);
+    if (await isGameRoomLive(roomID)) {
+        const sent = sendJsonToUser(room.currentDrawerID, { type: "DRAW_WORD", payload: { word } });
+        if (!sent) {
+            console.warn(`Failed to send DRAW_WORD to drawer ${room.currentDrawerID} - drawer not connected or not found`);
+        }
+    }
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
     }
 
     const handle = setTimeout(() => endTurn(roomID, "timeout"), TURN_DURATION_SECONDS * 1000);
@@ -234,6 +299,8 @@ const startPlaying = async (roomID, word) => {
 };
 
 const autoSelectWord = async (roomID) => {
+
+    if (!(await isGameRoomLive(roomID))) return;
 
     const room = await getRoomHash(roomID);
 
@@ -250,7 +317,15 @@ const autoSelectWord = async (roomID) => {
 
 export const selectWord = async (roomID, userID, word) => {
 
+    if (!(await isGameRoomLive(roomID))) {
+        return { status: false, message: "Room is no longer active." };
+    }
+
     const room = await getRoomHash(roomID);
+
+    if (!(await isGameRoomLive(roomID))) {
+        return { status: false, message: "Room is no longer active." };
+    }
 
     if (Number(room.state) !== WORD_SELECTION) {
         return { status: false, message: "Not currently selecting a word." };
@@ -279,7 +354,11 @@ export const selectWord = async (roomID, userID, word) => {
 // with a false return (normal chat broadcast).
 export const handleGuess = async (roomID, userID, text) => {
 
+    if (!(await isGameRoomLive(roomID))) return { isCorrectGuess: false };
+
     const room = await getRoomHash(roomID);
+
+    if (!(await isGameRoomLive(roomID))) return { isCorrectGuess: false };
 
     if (Number(room.state) !== PLAYING) {
         return { isCorrectGuess: false };
@@ -307,6 +386,11 @@ export const handleGuess = async (roomID, userID, text) => {
 
     await addGuessed(roomID, userID);
 
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return { isCorrectGuess: false };
+    }
+
     const remainingSeconds = Math.max(
         0,
         Math.round((Number(room.timerEndsAt) - Date.now()) / 1000)
@@ -317,6 +401,11 @@ export const handleGuess = async (roomID, userID, text) => {
 
     const guesserDetails = get_user_details(userID);
     const guesserRecord = await getPlayer(userID);
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return { isCorrectGuess: false };
+    }
 
     await broadcastToRoom(roomID, {
         type: "PLAYER_GUESSED",
@@ -342,6 +431,11 @@ export const endTurn = async (roomID, reason) => {
 
     clearRoomTimer(roomID);
 
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
+
     const room = await getRoomHash(roomID);
     const currentState = Number(room.state);
 
@@ -350,6 +444,11 @@ export const endTurn = async (roomID, reason) => {
     if (currentState === ROUND_END || currentState === GAME_OVER) return;
 
     await updateRoomFields(roomID, { state: ROUND_END });
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     const playerOrder = await getPlayerOrder(roomID);
 
@@ -367,6 +466,11 @@ export const endTurn = async (roomID, reason) => {
 };
 
 const advanceTurn = async (roomID) => {
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     const playerOrder = await getPlayerOrder(roomID);
     const room = await getRoomHash(roomID);
@@ -405,7 +509,17 @@ const endGame = async (roomID) => {
 
     clearRoomTimer(roomID);
 
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
+
     await updateRoomFields(roomID, { state: GAME_OVER });
+
+    if (!(await isGameRoomLive(roomID))) {
+        await teardownRoom(roomID);
+        return;
+    }
 
     const playerOrder = await getPlayerOrder(roomID);
     const scores = await buildPlayersWithScores(playerOrder);
