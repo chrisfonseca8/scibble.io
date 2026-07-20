@@ -475,7 +475,7 @@ const advanceTurn = async (roomID) => {
     const playerOrder = await getPlayerOrder(roomID);
     const room = await getRoomHash(roomID);
 
-    if (playerOrder.length === 0 || (await getRoomMembers(roomID)).length === 0) {
+    if (playerOrder.length === 1 || (await getRoomMembers(roomID)).length === 1) {
         await teardownRoom(roomID);
         return;
     }

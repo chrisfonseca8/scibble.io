@@ -6,10 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node src/server.js",
-    "test:create-room": "node tests/createRoom.test.js",
-    "test:join-room": "node tests/joinRoom.test.js",
-    "test:websocket": "node tests/websocket.test.js",
-    "test:start-game": "node tests/startGame.test.js"
+    "load-execute":"node tests/load/execute.js"
   },
   "keywords": [],
   "author": "",
