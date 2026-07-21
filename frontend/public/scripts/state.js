@@ -6,5 +6,6 @@ export const state = {
     username: null,
     avatar: null,
     language: null,
+    hostID: null,
     isDrawer: false
 };

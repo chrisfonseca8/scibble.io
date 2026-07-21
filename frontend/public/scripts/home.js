@@ -85,7 +85,8 @@ on("CONNECTED", (payload) => {
 
     console.log("Joined Room");
 
-    renderLobby(payload.players);
+    state.hostID = payload.hostID || null;
+    renderLobby(payload.players, payload.limit, state.hostID);
 
     showScreen("waiting");
 
