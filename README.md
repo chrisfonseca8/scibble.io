@@ -1,3 +1,11 @@
+
+
+https://github.com/user-attachments/assets/563f799c-dcc4-4a50-ad91-5a19e5e0debd
+
+
+
+
+
 # Real-Time Multiplayer Drawing & Guessing Game
 
 A real-time multiplayer drawing and guessing game inspired by Scribble, built with an event-driven architecture using WebSockets and Redis. The application is designed to support low-latency communication, synchronized canvas rendering, scalable room management, and turn-based gameplay across multiple concurrent game sessions.
