@@ -230,7 +230,11 @@ export function attach_webscoket_server(server) {
 
             await broadcastToRoom(roomID, {
                 type: "LOBBY_UPDATE",
-                payload: { players, limit: Number(updatedRoom.limit) }
+                payload: {
+                    players,
+                    limit: Number(updatedRoom.limit),
+                    hostID: updatedRoom.hostID
+                }
             });
         });
 

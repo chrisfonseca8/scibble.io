@@ -7,6 +7,7 @@ const roomCodeEl = document.getElementById("room-code");
 const playerListEl = document.getElementById("player-list");
 const startGameBtn = document.getElementById("startGameBtn");
 const maxPlayersEl = document.getElementById("maxPlayers");
+const playerCountEl = document.getElementById("player-count");
 // Called from home.js's CONNECTED handler to seed the lobby the
 // instant the player arrives, and reused below for LOBBY_UPDATE.
 
@@ -38,23 +39,42 @@ function updatePlayerLimitOptions(players) {
     }
 }
 
-export function renderLobby(players, limit) {
+export function renderLobby(players = [], limit, hostID = state.hostID) {
     roomCodeEl.textContent = state.roomID;
+    state.hostID = hostID || state.hostID;
 
     playerListEl.innerHTML = "";
 
-    (players || []).forEach((player) => {
+    players.forEach((player) => {
         const li = document.createElement("li");
 
         li.id = player.userID;
-        li.textContent = player.username;
+        li.className = "lobby-player";
+
+        const name = document.createElement("span");
+        name.className = "lobby-player-name";
+        name.textContent = player.username || "Unnamed player";
+        li.appendChild(name);
+
+        if (player.userID === state.hostID) {
+            const hostBadge = document.createElement("span");
+            hostBadge.className = "host-badge";
+            hostBadge.textContent = "HOST";
+            li.appendChild(hostBadge);
+        }
 
         playerListEl.appendChild(li);
     });
 
+    playerCountEl.textContent = `${players.length}/${limit ?? maxPlayersEl.value}`;
+
     if (limit !== undefined && limit !== null) {
         maxPlayersEl.value = String(limit);
     }
+
+    const isHost = state.userID === state.hostID;
+    maxPlayersEl.disabled = !isHost;
+    startGameBtn.disabled = !isHost;
 
     updatePlayerLimitOptions(players);
 }
@@ -64,7 +84,7 @@ export function renderLobby(players, limit) {
 // join/leave events (there's no PLAYER_JOINED/PLAYER_LEFT message
 // in the protocol, only LOBBY_UPDATE and CONNECTED).
 on("LOBBY_UPDATE", (payload) => {
-    renderLobby(payload.players, payload.limit);
+    renderLobby(payload.players, payload.limit, payload.hostID);
 });
 
 // Waiting screen owns START_GAME.

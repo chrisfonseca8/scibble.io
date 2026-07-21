@@ -72,8 +72,8 @@
                         </div>
 
                         <div class="setting-row fixed-setting">
-                            <label>Drawtime</label>
-                            <div class="fixed-val">80</div>
+                            <label>Draw time</label>
+                            <div class="fixed-val">80 seconds</div>
                         </div>
 
                         <div class="setting-row fixed-setting">
@@ -87,25 +87,20 @@
                         </div>
 
                         <div class="setting-row fixed-setting">
-                            <label>Word Count</label>
+                            <label>Word choices</label>
                             <div class="fixed-val">3</div>
                         </div>
 
-                        <div class="setting-row fixed-setting">
-                            <label>Hints</label>
-                            <div class="fixed-val">2</div>
-                        </div>
                     </div>
 
                     <div class="waiting-actions">
                         <button id="startGameBtn" class="btn-start">Start!</button>
-                        <button id="inviteBtn" class="btn-invite">🔗 Invite</button>
                     </div>
                 </div>
 
                 <div class="waiting-right">
+                    <div class="players-heading"><span>Players</span><span id="player-count">0</span></div>
                     <ul id="player-list">
-                        <li class="system-msg">ndlnr is now the room owner!</li>
                     </ul>
                 </div>
             </div>
@@ -118,7 +113,7 @@
 
             <div class="game-header">
 
-                <span id="round-display">Round 1/3</span>
+                <span id="round-display">Round 1/6</span>
                 <span id="word-display">_ _ _ _</span>
                 <span id="timer-display">--s</span>
 
@@ -131,16 +126,17 @@
                     <ul id="game-player-list"></ul>
                 </div>
 
-                <div id="canvas-container"></div>
-                <div id="drawing-tools" aria-label="Drawing tools">
-                    <button id="eraser-btn" type="button">Eraser</button>
-                    <button id="clear-canvas-btn" type="button">Clear canvas</button>
+                <div id="canvas-container">
+                    <div id="drawing-tools" aria-label="Drawing tools">
+                        <button id="eraser-btn" type="button">Eraser</button>
+                        <button id="clear-canvas-btn" type="button">Clear canvas</button>
+                    </div>
                 </div>
 
                 <div id="chat-container">
 
                     <div id="chat-header">
-                        Room Chat
+                        <span>Room chat</span><span class="chat-status">LIVE</span>
                     </div>
 
                     <div id="chat-box"></div>

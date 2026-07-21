@@ -45,11 +45,24 @@ function renderPlayers(players) {
         const nameSpan = document.createElement("span");
         nameSpan.textContent = (isDrawer ? "✏️ " : "") + (player.username || "");
 
+        nameSpan.className = "game-player-name";
+        nameSpan.textContent = player.username || "Unnamed player";
+
+        const detailsSpan = document.createElement("span");
+        detailsSpan.className = "player-role";
+        if (isDrawer) detailsSpan.textContent = "DRAWING";
+        if (player.userID === state.hostID) {
+            detailsSpan.textContent = detailsSpan.textContent
+                ? `${detailsSpan.textContent} · HOST`
+                : "HOST";
+        }
+
         const pointsSpan = document.createElement("span");
         pointsSpan.className = "player-points";
-        pointsSpan.textContent = player.points !== undefined ? player.points : "";
+        pointsSpan.textContent = `${player.points ?? 0} pts`;
 
         li.appendChild(nameSpan);
+        if (detailsSpan.textContent) li.appendChild(detailsSpan);
         li.appendChild(pointsSpan);
 
         gamePlayerListEl.appendChild(li);
@@ -89,7 +102,6 @@ on("START_GAME", (payload) => {
     // later via TURN_STARTING, which is what renderPlayers is really
     // built for. This is just a same-tick placeholder so the panel
     // isn't empty.
-    renderPlayers((payload.players || []).map((userID) => ({ userID, username: "..." })));
 });
 
 on("TURN_STARTING", (payload) => {

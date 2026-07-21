@@ -26,7 +26,7 @@ import { broadcastToRoom, get_user_details, sendJsonToUser } from '../../ws/wsMa
 const { WORD_SELECTION, PLAYING, ROUND_END, GAME_OVER } = states;
 
 const TURN_DURATION_SECONDS = 80;      // matches the "Drawtime 80" already shown in the waiting-room UI
-const MAX_ROUNDS = 3;                  // per the spec's own worked example
+const MAX_ROUNDS = 6;                  // fixed lobby setting
 const WORD_OPTIONS_COUNT = 3;          // matches the "Word Count 3" already shown in the waiting-room UI
 const DRAWER_POINTS_PER_GUESSER = 50;
 const WORD_SELECTION_GRACE_MS = 15000; // auto-pick if the drawer never selects

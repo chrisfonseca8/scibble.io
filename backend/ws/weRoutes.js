@@ -127,7 +127,8 @@ export const handle_message = async (message, socket) => {
                     roomID,
                     userID,
                     players,
-                    limit: Number(room.limit)
+                    limit: Number(room.limit),
+                    hostID: room.hostID
                 }
             });
 
@@ -135,7 +136,7 @@ export const handle_message = async (message, socket) => {
             // new player show up.
             await broadcastToRoom(roomID, {
                 type: "LOBBY_UPDATE",
-                payload: { players, limit: Number(room.limit) }
+                payload: { players, limit: Number(room.limit), hostID: room.hostID }
             }, socket);
 
             console.log("Job done");
@@ -232,6 +233,7 @@ export const handle_message = async (message, socket) => {
                 payload: {
                     players,
                     limit: limit_num,
+                    hostID: room.hostID,
                 },
             });
 
