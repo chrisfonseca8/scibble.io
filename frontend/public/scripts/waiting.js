@@ -79,10 +79,7 @@ export function renderLobby(players = [], limit, hostID = state.hostID) {
     updatePlayerLimitOptions(players);
 }
 
-// Per the protocol, LOBBY_UPDATE always carries the complete player
-// list — the client fully redraws rather than diffing individual
-// join/leave events (there's no PLAYER_JOINED/PLAYER_LEFT message
-// in the protocol, only LOBBY_UPDATE and CONNECTED).
+
 on("LOBBY_UPDATE", (payload) => {
     renderLobby(payload.players, payload.limit, payload.hostID);
 });

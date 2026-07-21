@@ -16,38 +16,23 @@ import {
     deleteRoom
 } from '../redis_service/redis_service.js';
 
-// broadcastToRoom/sendJson/get_user_details come from wsManager, which
-// itself imports handle_message from weRoutes, which imports this
-// module — the same circular-import shape weRoutes<->wsManager already
-// has today. Safe in ESM as long as nothing here runs at import time,
-// only inside functions (which is the case below).
 import { broadcastToRoom, get_user_details, sendJsonToUser } from '../../ws/wsManager.js';
 
 const { WORD_SELECTION, PLAYING, ROUND_END, GAME_OVER } = states;
 
-const TURN_DURATION_SECONDS = 80;      // matches the "Drawtime 80" already shown in the waiting-room UI
-const MAX_ROUNDS = 6;                  // fixed lobby setting
-const WORD_OPTIONS_COUNT = 3;          // matches the "Word Count 3" already shown in the waiting-room UI
+const MAX_ROUNDS = 6;                   
+const WORD_OPTIONS_COUNT = 3;          
 const DRAWER_POINTS_PER_GUESSER = 50;
-const WORD_SELECTION_GRACE_MS = 15000; // auto-pick if the drawer never selects
-const ROUND_END_DELAY_MS = 5000;       // let clients show the scoreboard before the next turn starts
+const TURN_DURATION_SECONDS = 80;      
+const WORD_SELECTION_GRACE_MS = 15000; 
+const ROUND_END_DELAY_MS = 5000;       
 
-// roomID -> { type, handle } for whichever single timer (word-selection
-// grace, turn countdown, or round-end delay) is currently pending for
-// that room. In-memory only, single-instance — matches the existing
-// user_id_details_Map / socket_user_id_Map pattern in wsManager.js.
+
 const roomTimers = new Map();
 
-// roomID -> word options currently offered to the drawer. Kept out of
-// Redis on purpose: the spec is explicit the actual word must never
-// reach guessers, and this is choices-not-yet-made state that only
-// the server process mid-selection needs.
+
 const pendingWordOptions = new Map();
 
-// A Redis delete cannot cancel JavaScript that was already suspended at an
-// await.  This set is the in-process cancellation token for that work: when
-// the final socket closes, teardown removes the room before deleting Redis
-// keys, and any resumed timer/turn exits without sending a message.
 const activeGameRooms = new Set();
 
 const isGameRoomLive = async (roomID) => {
@@ -65,8 +50,7 @@ export const clearRoomTimer = (roomID) => {
     roomTimers.delete(roomID);
 };
 
-// Safe to call more than once.  This is the single teardown entry point for
-// an empty room, so timers cannot resurrect an already-deleted game.
+
 export const teardownRoom = async (roomID, additionalUserIDs = []) => {
     activeGameRooms.delete(roomID);
     clearRoomTimer(roomID);
@@ -103,9 +87,7 @@ const getConnectedPlayerCount = async (playerOrder) => {
     return count;
 };
 
-// total players - 1 (drawer can't guess), recalculated live off
-// currently-connected players so a mid-turn disconnect lowers the bar
-// per the spec's "Guesser Disconnect" section.
+
 const getRequiredGuesserCount = async (playerOrder) => {
 
     const connected = await getConnectedPlayerCount(playerOrder);
@@ -116,8 +98,7 @@ const getRequiredGuesserCount = async (playerOrder) => {
 export const startGame = async (roomID) => {
 
     const playerOrder = await getPlayerOrder(roomID);//gets a list of userID beloning  to the roomID
-    console.log(`player order is : ${playerOrder},,, type_of : ${typeof (playerOrder)}`)
-    console.trace(`this is in startGame`)
+ 
 
     if (playerOrder.length < 2) {
         return { status: false, message: "Need at least 2 players to start." };
@@ -151,8 +132,7 @@ export const beginTurn = async (roomID) => {
     }
 
     const playerOrder = await getPlayerOrder(roomID);
-    console.log(`player order is : ${playerOrder},,, type_of : ${typeof (playerOrder)}`)
-    console.trace(`this is in beginTurn()`)
+
 
     if (playerOrder.length === 0 || (await getRoomMembers(roomID)).length === 0) {
         await teardownRoom(roomID);
@@ -160,12 +140,10 @@ export const beginTurn = async (roomID) => {
     }
 
     const room = await getRoomHash(roomID);
-    console.log(typeof (room), room, room.currentDrawerIndex)
-    console.trace(`we are tracking the getroomhash details `)
+
     const drawerIndex = Number(room.currentDrawerIndex || 0) % playerOrder.length;
     const drawerID = playerOrder[drawerIndex];
 
-    console.log(`drawerIndex:${drawerIndex},drawerID:${drawerID}`)
 
     // Guessed set only exists during a turn — wiped at the start of
     // every one, per spec.
@@ -197,11 +175,8 @@ export const beginTurn = async (roomID) => {
 
 
 
-    console.log(`---------------------${drawerID}-------------------------`, typeof (drawerID))
+  
     const drawerDetails = get_user_details(drawerID);
-    console.log(`drawerDetails`)
-    console.log(drawerDetails);
-    console.trace(`drawer details of that turn`)
 
     const drawerRecord = await getPlayer(drawerID);
 
@@ -348,10 +323,7 @@ export const selectWord = async (roomID, userID, word) => {
     return { status: true };
 };
 
-// Returns whether the incoming chat text should be swallowed as a
-// guess (correct, incl. a harmless duplicate) rather than broadcast
-// as a normal chat message. The caller (weRoutes) decides what to do
-// with a false return (normal chat broadcast).
+
 export const handleGuess = async (roomID, userID, text) => {
 
     if (!(await isGameRoomLive(roomID))) return { isCorrectGuess: false };
@@ -534,15 +506,11 @@ const endGame = async (roomID) => {
         payload: { scores, winner }
     });
 
-    // Usually the close handler performs this immediately.  This covers a
-    // game that reached GAME_OVER after its final socket disappeared.
+
     if ((await getRoomMembers(roomID)).length === 0) await teardownRoom(roomID);
 };
 
-// Called from wsManager's socket close handler. Handles the three
-// disconnect cases from the spec: drawer, guesser, and (for host
-// transfer) the room-level concern is handled in wsManager itself
-// since it isn't game-state specific.
+
 export const handleGameDisconnect = async (roomID, userID) => {
 
     await setPlayerConnected(userID, false, roomID);

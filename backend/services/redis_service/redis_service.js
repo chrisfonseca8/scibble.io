@@ -51,10 +51,6 @@ export const add_newRoom_user_info = async (roomID, userID, username) => {
     };
 };
 
-// Used when a user joins a room that already exists (not the creator).
-// NOTE: room creation does NOT call this — add_newRoom_user_info already
-// adds the host to the members set as part of its own transaction.
-// Calling both for the same user was writing the same member twice.
 export const roomID_userID_track = async (roomID, userID) => {
 
     const key = `room:${roomID}:members`;
@@ -67,8 +63,7 @@ export const roomID_userID_track = async (roomID, userID) => {
         message: "User added to room.",
     };
 
-    console.log(await redis.smembers(key))
-    console.trace("roomID_userID_track was called here ")
+
 };
 
 export const getRoomMembers = async (roomID) => {
@@ -174,8 +169,6 @@ export const checkRedis = async (userID, roomID) => {
 
     } catch (error) {
 
-        console.error(error);
-
         return {
             status: false,
             message: "Redis verification failed."
@@ -210,16 +203,7 @@ export const update_redis_limit = async (limit, roomID) => {
     }
 };
 
-/* ------------------------------------------------------------------ */
-/* Game logic layer additions below.                                  */
-/* Everything above this line is the pre-existing lobby/room service. */
-/* ------------------------------------------------------------------ */
 
-// Fixed turn-order list, per the spec: room:{roomID}:players (LIST),
-// separate from room:{roomID}:members (SET, used by the existing lobby
-// broadcast code). Populated as players join; never reordered.
-// lpos guards against double-adding the same userID on a reconnect
-// that re-sends JOIN_ROOM for a player already in the list.
 export const addPlayerToOrder = async (roomID, userID) => {
 
     const key = `room:${roomID}:players`;
@@ -234,8 +218,7 @@ export const addPlayerToOrder = async (roomID, userID) => {
     await redis.rpush(key, userID);
     await refreshRoomTTL(roomID);
 
-    console.log("room-roomid-players", await redis.lrange(key, 0, -1));
-    console.trace("room-roomid-players was shown here")
+
 
 };
 
@@ -276,8 +259,6 @@ export const createPlayerHash = async (userID, username, roomID) => {
     await redis.expire(key, ROOM_TTL_SECONDS);
     await refreshRoomTTL(roomID);
 
-    console.log("players:userID", await redis.hgetall(key));
-    console.trace("players:userID was shown here")
 
 };
 
@@ -322,8 +303,7 @@ export const updateRoomFields = async (roomID, fields) => {
     await redis.hset(key, fields);
     await refreshRoomTTL(roomID);
 
-    console.log(await redis.hgetall(key))
-    console.trace(`here this is the updated room:${roomID}`)
+
 };
 
 // room:{roomID}:guessed SET — only exists during a single turn.

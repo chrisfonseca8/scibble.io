@@ -67,10 +67,6 @@ export const createRoom_controller = async (req, res, next) => {
         }
 
         const { userID, roomID } = roomResult.data;
-
-        // This was the fatal one: the old version just `return`ed
-        // this object instead of sending it, so the client's fetch()
-        // to /createRoom would hang until it timed out.
         return res.status(200).json({
             status: true,
             message: "Room created successfully.",
@@ -85,12 +81,6 @@ export const createRoom_controller = async (req, res, next) => {
 export const joinRoom_controller = async (req, res, next) => {
     try {
 
-        console.log("join room controller is hit ")
-
-        // username isn't used by room_join_redis itself (nothing gets
-        // written to Redis for it here), but it's validated up front
-        // anyway since the frontend needs a good username in hand
-        // before it opens the socket and sends JOIN_ROOM.
         validateUsername(req.body.username);
         const roomID = validateRoomID(req.body.roomID);
 

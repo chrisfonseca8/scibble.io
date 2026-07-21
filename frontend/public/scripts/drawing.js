@@ -24,12 +24,7 @@ function sketch(p) {
 
     p.mouseDragged = () => {
 
-        // Server is the source of truth on who may draw (see
-        // DRAW_EVENT handling in weRoutes.js) — this check just keeps
-        // guessers from scribbling on their own screen for no reason
-        // while a round is live. Before any round has started,
-        // state.isDrawer is still false, so this only ever blocks
-        // during an actual game, not idle canvas play.
+
         if (!state.isDrawer) return;
 
         p.stroke(eraserEnabled ? 255 : 0);
@@ -47,8 +42,7 @@ function sketch(p) {
         });
     };
 
-    // Called from the DRAW_EVENT handler below to render strokes
-    // coming from other players.
+
     p.remoteDraw = (payload) => {
 
         p.stroke(payload.color);

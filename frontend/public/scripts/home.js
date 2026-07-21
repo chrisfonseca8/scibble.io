@@ -78,12 +78,9 @@ randomBtn.onclick = () => {
 
 };
 
-// Home screen owns CONNECTED and ERROR per the message-ownership rules.
-// It still delegates the actual lobby rendering to waiting.js so there's
-// one place that knows how to draw the player list.
 on("CONNECTED", (payload) => {
 
-    console.log("Joined Room");
+  
 
     state.hostID = payload.hostID || null;
     renderLobby(payload.players, payload.limit, state.hostID);
@@ -175,14 +172,11 @@ createRoom.onclick = async () => {
 
         connectAndJoinRoom(roomID, userID);
 
-        // Buttons re-enable from the CONNECTED/ERROR handlers above,
-        // once the server actually responds over the socket — not
-        // immediately after send(), which let people double-submit
-        // before the server had a chance to reply.
+   
 
     }
     catch (error) {
-        console.log(error)
+
 
         console.error(error);
 
@@ -201,8 +195,7 @@ joinRoom.onclick = async () => {
         return;
     }
 
-    // Placeholder for a real "enter room code" input — prompt() is a
-    // stand-in until there's a proper field on the home screen.
+
     const roomID = window.prompt("Enter the room code:");
 
     if (!roomID || !roomID.trim()) {

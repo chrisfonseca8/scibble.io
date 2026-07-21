@@ -66,12 +66,7 @@ export const sendJson = (socket, payload) => {
     socket.send(JSON.stringify(payload));
 };
 
-// Rebuilds the full lobby player list for a room: Redis' members set
-// is the source of truth for who belongs to the room, the in-memory
-// map fills in the live username for whoever is currently connected.
-// A userID present in Redis but not in the map just means that
-// connection dropped without a clean close yet — it's skipped rather
-// than shown with a blank username.
+
 export const buildLobbyPlayers = async (roomID) => {
 
     const memberIDs = await getRoomMembers(roomID);
@@ -85,11 +80,7 @@ export const buildLobbyPlayers = async (roomID) => {
         .filter(Boolean);
 };
 
-// The actual point of pairing Redis membership with the in-memory
-// socket map: look up who belongs to the room (Redis), resolve each
-// of those userIDs to their live socket (in-memory), send only to
-// them. The previous implementation ignored both and broadcast to
-// every socket on the server regardless of room.
+
 export const broadcastToRoom = async (roomID, payload, excludeSocket = null) => {
 
     const memberIDs = await getRoomMembers(roomID);
@@ -105,8 +96,7 @@ export const broadcastToRoom = async (roomID, payload, excludeSocket = null) => 
     }
 };
 
-// Send a message to a specific user if they are connected.
-// Returns true if sent, false if user not connected.
+
 export const sendJsonToUser = (userID, payload) => {
     const details = user_id_details_Map.get(userID);
     if (!details) return false;
@@ -124,7 +114,7 @@ export function attach_webscoket_server(server) {
 
     wss.on('connection', (socket) => {
 
-        console.log('socket from the client connected');
+      
 
         socket.on("message", (data) => {
 
