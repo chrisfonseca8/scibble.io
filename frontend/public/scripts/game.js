@@ -3,7 +3,6 @@ import { showScreen } from "./screens.js";
 import { startDrawingCanvas, clearDrawingCanvas } from "./drawing.js";
 import { state } from "./state.js";
 
-console.log("game.js is loading");
 
 const gamePlayerListEl = document.getElementById("game-player-list");
 const roundDisplayEl = document.getElementById("round-display");
@@ -97,15 +96,11 @@ on("START_GAME", (payload) => {
 
     startDrawingCanvas();
 
-    // players here is a flat array of userIDs (matches the existing
-    // room_service member list) — real names/scores arrive moments
-    // later via TURN_STARTING, which is what renderPlayers is really
-    // built for. This is just a same-tick placeholder so the panel
-    // isn't empty.
+
 });
 
 on("TURN_STARTING", (payload) => {
-    console.log(`TURN_STARTING is hit : ${payload}`)
+
 
     hideAllOverlays();
     stopTimer();
@@ -132,7 +127,6 @@ on("TURN_STARTING", (payload) => {
 
 on("WORD_OPTIONS", (payload) => {
 
-    console.log(`WORD_OPTIONS is hit`, payload)
 
     wordOptionsEl.innerHTML = "";
 
@@ -166,10 +160,10 @@ on("ROUND_STARTED", (payload) => {
 
 // This event is sent only to the active drawer.  Keeping it separate from
 // ROUND_STARTED guarantees the word is never present in a room broadcast.
-console.log("Registering DRAW_WORD handler");
+
 
 on("DRAW_WORD", (payload) => {
-    console.log("DRAW_WORD received with payload:", payload);
+  
     if (state.isDrawer) {
         wordDisplayEl.textContent = payload.word || "Draw the word!";
     }

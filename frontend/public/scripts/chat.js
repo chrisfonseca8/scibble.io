@@ -34,9 +34,7 @@ on("CHAT_EVENT", (payload) => {
     chatBox.scrollTop = chatBox.scrollHeight;
 });
 
-// Correct guesses are never echoed back through CHAT_EVENT (that
-// would leak the word to everyone else) — the server broadcasts a
-// dedicated PLAYER_GUESSED event instead, which this renders as a
+
 // system message.
 on("PLAYER_GUESSED", (payload) => {
 

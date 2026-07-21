@@ -20,10 +20,7 @@ export const room_creation_redis = async (username) => {
         const userID = uuidv4();
         const roomID = uuidv4();
 
-        // add_newRoom_user_info already adds the host to
-        // room:<roomID>:members inside its own multi/exec — no need
-        // for a second roomID_userID_track call here, that was
-        // writing the same member into the set twice.
+
         const roomResponse = await add_newRoom_user_info(
             roomID,
             userID,
@@ -79,7 +76,7 @@ export const room_join_redis = async (roomID) => {
         const limit = Number(await getRoomLimit(roomID));
 
         const members = await getRoomMembers(roomID);
-        console.log(members,typeof(members))
+    
 
         // Room already full
         if (Number(members.length) >= limit) {
