@@ -38,7 +38,7 @@ React client ──REST──► Express API ──► Redis (room:{id}, player 
 
 ## Benchmarks
 
-Measured with a custom concurrency script (one run per setting; details in [`docs/benchmarks`](docs/benchmarks)).
+Measured with a custom concurrency script (one run per setting; details in [`dataFlow_testResult.html`](dataFlow_testResult.html)).
 
 | | 50 rooms (300 sockets) | 100 rooms (600 sockets) |
 |---|---:|---:|
